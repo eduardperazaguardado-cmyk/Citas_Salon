@@ -4,64 +4,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - DanasNails</title>
+    <title>DanasNails - Panel Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Poppins:wght@300;400;500&display=swap"
-        rel="stylesheet">
-
     <style>
+        :root {
+            --gold-main: #cca43b;
+            --gold-dark: #b08928;
+            --gold-soft: #f4ecdc;
+            --gold-border: #cca43b;
+            --bg-page: #f9f7f3;
+            --text-dark: #2b2623;
+        }
+
         body {
-            background-color: #f8fafc;
-            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
-        .salon-title {
-            font-family: 'Playfair Display', serif;
-            color: #831843;
+        .admin-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            border: 1px solid rgba(204, 164, 59, 0.25);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
         }
 
-        .card-custom {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        .title-gold {
+            color: var(--gold-main);
+            font-weight: 700;
         }
 
-        .table-hover tbody tr:hover {
-            background-color: #fdf2f8;
+        .table-custom thead {
+            background-color: var(--gold-soft);
+        }
+
+        .table-custom th {
+            color: var(--gold-dark);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--gold-border);
+            padding: 12px;
+        }
+
+        .badge-specialist {
+            background-color: var(--gold-soft) !important;
+            color: var(--gold-dark) !important;
+            border: 1px solid var(--gold-border);
         }
 
         .badge-pendiente {
-            background-color: #fb7185;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .badge-cancelada {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        .badge-bloqueado {
+            background-color: #efebe9;
+            color: #4e342e;
+            border: 1px solid #bcaaa4;
+        }
+
+        .btn-gold {
+            background-color: var(--gold-main);
+            color: #fff;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-gold:hover {
+            background-color: var(--gold-dark);
+            color: #fff;
+        }
+
+        .badge-finalizada {
+            background-color: #e3f2fd !important;
+            color: #1565c0 !important;
+            border: 1px solid #90caf9;
         }
     </style>
 </head>
 
-<body>
-    <!-- Barra de navegación superior -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #831843;">
-        <div class="container">
-            <a class="navbar-brand" style="font-family: 'Playfair Display', serif; font-size: 1.5rem;" href="#">💅
-                DanasNails Admin</a>
+<body class="py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h2 class="title-gold m-0">DanasNails</h2>
+                <small class="text-muted">Panel de Gestión y Bloqueos</small>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-dark rounded-pill btn-sm px-3">
+                ← Ver Formulario
+            </a>
         </div>
-    </nav>
 
-    <div class="container mt-5">
-        <!-- Tarjeta para bloquear horarios -->
-        <div class="card card-custom p-3 mb-4" style="background-color: #fff1f2; border-left: 5px solid #e11d48;">
-            <h5 class="salon-title fw-bold">Bloquear Horario / Descanso</h5>
-            <form action="/bloquear" method="POST" class="row g-3 align-items-end">
+        <!-- Seccion: Bloquear Horario -->
+        <div class="admin-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 text-dark">🔒 Bloquear Horario por Especialista</h5>
+            <form action="{{ url_for('bloquear_horario') }}" method="POST" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label for="fecha_bloqueo" class="form-label text-secondary fw-medium">Fecha a bloquear</label>
-                    <input type="date" class="form-control" id="fecha_bloqueo" name="fecha" required>
+                    <label class="form-label fw-bold small text-muted">Especialista</label>
+                    <select name="trabajadora_id" class="form-select rounded-3" required>
+                        <option value="">Selecciona una especialista...</option>
+                        {% for t in trabajadoras %}
+                        <option value="{{ t[0] }}">{{ t[1] }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="col-md-4">
-                    <label for="hora_bloqueo" class="form-label text-secondary fw-medium">Hora a bloquear</label>
-                    <select class="form-select" id="hora_bloqueo" name="hora" required>
-                        <option value="">Elige una hora...</option>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">Fecha</label>
+                    <input type="date" name="fecha" class="form-control rounded-3" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">Hora</label>
+                    <select name="hora" class="form-select rounded-3" required>
+                        <option value="">Selecciona la hora...</option>
                         <option value="08:00">08:00 AM</option>
                         <option value="09:00">09:00 AM</option>
                         <option value="10:00">10:00 AM</option>
@@ -76,64 +137,78 @@
                         <option value="19:00">07:00 PM</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-danger w-100">Bloquear Espacio 🔒</button>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-gold w-100 py-2">Bloquear</button>
                 </div>
             </form>
         </div>
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="salon-title fw-bold">Agenda de Citas</h2>
-            <a href="/" class="btn btn-outline-secondary">Ver página pública</a>
-        </div>
 
-        <div class="card card-custom p-4">
+        <!-- Tabla de Citas -->
+        <div class="admin-card p-4">
+            <h5 class="fw-bold mb-3 text-dark">📋 Registro de Citas</h5>
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+                <table class="table table-custom align-middle">
+                    <thead>
                         <tr>
-                            <th>Fecha</th>
-                            <th>Hora</th>
                             <th>Cliente</th>
                             <th>Teléfono</th>
                             <th>Servicio</th>
+                            <th>Atendida Por</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
                             <th>Estado</th>
-                            <th>Acción</th>
+                            <th class="text-center">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- cita[0] es ID, [1] es Nombre, [2] es Teléfono, [3] es Servicio, [4] es Fecha, [5] es Hora, [6] es Estado -->
                         {% for cita in citas %}
                         <tr>
-                            <td class="fw-medium">{{ cita[4] }}</td>
-                            <td class="fw-bold text-danger">{{ cita[5] }}</td>
-                            <td>{{ cita[1] }}</td>
-                            <td><a href="tel:{{ cita[2] }}" class="text-decoration-none">{{ cita[2] }}</a></td>
-                            <td>{{ cita[3] }}</td>
+                            <td><strong>{{ cita[1] }}</strong></td>
+                            <td>{{ cita[2] }}</td>
                             <td>
-                                <!-- Cambiamos el color de la etiqueta según el estado -->
-                                {% if cita[6] == 'cancelado' %}
-                                <span class="badge bg-secondary">Cancelada</span>
-                                {% elif cita[6] == 'Bloqueado' %}
-                                <span class="badge bg-dark">Bloqueado</span>
+                                {% if cita[7] == 'Bloqueado' %}
+                                <span class="text-muted fw-bold">N/D</span>
                                 {% else %}
-                                <span class="badge bg-success">{{ cita[6] }}</span>
+                                {{ cita[3] }}
                                 {% endif %}
                             </td>
                             <td>
-                                <!-- Solo mostramos el botón si la cita NO está cancelada -->
-                                {% if cita[6] != 'cancelado' %}
-                                <form action="/cancelar" method="POST" style="display:inline;">
-                                    <input type="hidden" name="id_cita" value="{{ cita[0] }}">
-                                    <!-- Agregamos una alerta de confirmación por si le da clic por error -->
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                        onclick="return confirm('¿Estás segura de cancelar esta cita?');">Cancelar</button>
+                                <span class="badge badge-specialist px-2 py-1 rounded-3">
+                                    💅 {{ cita[4] }}
+                                </span>
+                            </td>
+                            <td>{{ cita[5] }}</td>
+                            <td><strong>{{ cita[6] }}</strong></td>
+                            <td>
+                                {% if cita[7] == 'Pendiente' %}
+                                <span class="badge badge-pendiente px-2 py-1 rounded-3">Pendiente</span>
+                                {% elif cita[7] == 'Finalizada' %}
+                                <span class="badge badge-finalizada px-2 py-1 rounded-3">Finalizada ✔</span>
+                                {% elif cita[7] == 'Cancelada' %}
+                                <span class="badge badge-cancelada px-2 py-1 rounded-3">Cancelada</span>
+                                {% else %}
+                                <span class="badge badge-bloqueado px-2 py-1 rounded-3">Bloqueado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if cita[7] != 'Cancelada' %}
+                                <form action="{{ url_for('cancelar_cita', id_cita=cita[0]) }}" method="POST"
+                                    class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                        onclick="return confirm('¿Deseas cancelar este registro?');">
+                                        Cancelar
+                                    </button>
                                 </form>
+                                {% else %}
+                                <span class="text-muted small">--</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">Aún no hay citas agendadas.</td>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                No se encontraron citas o bloqueos registrados.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

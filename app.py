@@ -1,276 +1,259 @@
-from flask import Flask, render_template, request, jsonify, redirect
+import datetime
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import pyodbc
 
 app = Flask(__name__)
 
+# --- CONFIGURACIÓN Y BASE DE DATOS ---
 def obtener_conexion():
-    conexion = pyodbc.connect(
-        'driver={odbc driver 17 for sql server};'
-        'server= .\SQLEXPRESS;'
-        'database=SalonDB;'
-        'trusted_connection=yes;'
+    return pyodbc.connect(
+        'DRIVER={ODBC Driver 17 for SQL Server};'
+        'SERVER=localhost\\SQLEXPRESS;'  # Si usas SQL Server Express, cambia a: 'SERVER=localhost\\SQLEXPRESS;'
+        'DATABASE=SalonDB;'
+        'Trusted_Connection=yes;'
     )
 
-    return conexion
-from flask import Flask, render_template
+# ==========================================
+# 1. RUTAS DE CLIENTA (PÚBLICAS)
+# ==========================================
 
-# ... (tu configuración de conexión se queda igual)
-
+# Página principal: Formulario de reserva
 @app.route('/')
-def inicio():
+def index():
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
-        cursor.execute(""" SELECT idServicio, nombre, descripcion, precio, duracion_minutos 
-                           FROM Servicios 
-                           WHERE activo = 1 
-                           ORDER BY nombre """)
+        cursor.execute("SELECT * FROM Servicios")
         servicios = cursor.fetchall()
-        cursor.close()
+        cursor.execute("SELECT * FROM Trabajadoras")
+        trabajadoras = cursor.fetchall()
         conexion.close()
-        
-        # Enviamos los servicios desde la base de datos hacia tu nuevo archivo HTML
-        return render_template('index.html', servicios=servicios)
+        return render_template('index.html', servicios=servicios, trabajadoras=trabajadoras)
+    except Exception as e:
+        return f"Error al cargar la página principal: {e}"
 
-    except Exception as error:
-        return f"Error al conectar con la base de datos: {error}", 500
-    
 @app.route('/agendar', methods=['POST'])
 def agendar():
     try:
-        # 1. Recibimos los datos (ahora fecha y hora vienen listos y por separado)
         nombre = request.form['nombre']
         telefono = request.form['telefono']
-        servicio_id = request.form['servicio']
-        fecha_sola = request.form['fecha']
-        hora_sola = request.form['hora']
+        servicio_id = request.form['servicio_id']
+        trabajadora_id = request.form['trabajadora_id']
+        fecha = request.form['fecha']
+        hora = request.form['hora']
+
+        # Combinar fecha y hora para la columna fecha_hora obligatoria
+        fecha_hora_combinada = f"{fecha} {hora}"
 
         conexion = obtener_conexion()
         cursor = conexion.cursor()
 
-        # --- ESCUDO DE VALIDACIÓN: Verificamos si la hora ya está tomada ---
+        # Incluimos 'fecha_hora' en las columnas y en los valores
         cursor.execute("""
-            SELECT idcitas FROM citas 
-            WHERE fecha = ? AND hora = ? AND estado != 'cancelada'
-        """, (fecha_sola, hora_sola))
-        
-        cita_existente = cursor.fetchone()
-        
-        # Si SQL Server encuentra un registro, rechazamos la nueva cita
-        if cita_existente:
-            cursor.close()
-            conexion.close()
-            return f"""
-            <div style="text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin-top: 50px;">
-                <h2 style="color: #e11d48;">¡Ups! Ese horario ya está ocupado. 😅</h2>
-                <p>Alguien más ya reservó un espacio el <b>{fecha_sola}</b> a las <b>{hora_sola}</b>.</p>
-                <a href="/" style="padding: 10px 20px; background-color: #fb7185; color: white; text-decoration: none; border-radius: 8px;">Elegir otra hora</a>
-            </div>
-            """
-        # -------------------------------------------------------------------
+            INSERT INTO citas (nombre_cliente, telefono_cliente, id_servicio, trabajadoras_idTrabajadora, fecha, hora, fecha_hora, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente')
+        """, (nombre, telefono, servicio_id, trabajadora_id, fecha, hora, fecha_hora_combinada))
 
-        # 2. Si el horario está libre, guardamos la cita en tu tabla
-        cursor.execute("""
-            INSERT INTO citas (nombre_cliente, telefono_cliente, id_servicio, fecha, hora)
-            VALUES (?, ?, ?, ?, ?)
-        """, (nombre, telefono, servicio_id, fecha_sola, hora_sola))
-        
-        # 3. Confirmamos los cambios
-        conexion.commit() 
-        cursor.close()
+        conexion.commit()
         conexion.close()
 
-        # 4. Mostramos la página de éxito decorada
-        return render_template('exito.html')
+        return render_template('exito.html', nombre=nombre, fecha=fecha, hora=hora)
 
-    except Exception as error:
-        return f"Error al guardar la cita: {error}", 500
+    except Exception as e:
+        print("Error al agendar:", e)
+        return f"Ocurrió un error al guardar la cita: {e}", 500
 
-@app.route('/horas_disponibles')
+# API para obtener las horas disponibles dinámicamente con AJAX
+@app.route('/horas_disponibles', methods=['GET'])
 def horas_disponibles():
-    # Recibimos la fecha que la clienta eligió en el calendario
+    id_trabajadora = request.args.get('trabajadora_id')
     fecha = request.args.get('fecha')
-    if not fecha:
-        return jsonify([])
-
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
     
-    # Buscamos qué horas ya están ocupadas en esa fecha exacta
-    cursor.execute("SELECT hora FROM citas WHERE fecha = ? AND estado != 'cancelada'", (fecha,))
-    citas_tomadas = cursor.fetchall()
-    
-    # Guardamos las horas ocupadas en una lista (formato "14:00")
-    horas_ocupadas = []
-    for cita in citas_tomadas:
-        hora_str = str(cita[0])[:5] 
-        horas_ocupadas.append(hora_str)
+    if not id_trabajadora or not fecha:
+        return jsonify({"exito": False, "horas": []})
         
-    cursor.close()
-    conexion.close()
+    horarios_base = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"]
+    
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtenemos las horas ocupadas o bloqueadas para esa especialista en esa fecha
+        cursor.execute("""
+            SELECT hora FROM citas 
+            WHERE trabajadoras_idTrabajadora = ? AND fecha = ? AND estado != 'Cancelada'
+        """, (int(id_trabajadora), fecha))
+        
+        raw_ocupadas = cursor.fetchall()
+        conexion.close()
+        
+        ocupadas = []
+        for row in raw_ocupadas:
+            if row[0]:
+                hora_str = str(row[0]).strip()[:5]
+                ocupadas.append(hora_str)
+                
+        libres = [h for h in horarios_base if h not in ocupadas]
+        
+        return jsonify({"exito": True, "horas": libres})
+    except Exception as e:
+        print(f"Error en /horas_disponibles: {e}")
+        return jsonify({"exito": False, "error": str(e)}), 500
 
-    # Esta es tu lista de todas las horas que atiende el salón
-    todas_las_horas = [
-        "08:00", "09:00", "10:00", "11:00", 
-        "12:00", "13:00", "14:00", "15:00", "16:00",
-        "17:00", "18:00", "19:00"
-    ]
+# Consultar citas pendientes por número de teléfono de la clienta
+@app.route('/mis_citas', methods=['GET', 'POST'])
+def mis_citas():
+    citas = []
+    telefono = ""
+    if request.method == 'POST':
+        telefono = request.form.get('telefono', '').strip()
+        if telefono:
+            conexion = obtener_conexion()
+            cursor = conexion.cursor()
+            query = """
+                SELECT 
+                    c.idcitas,
+                    c.nombre_cliente,
+                    c.telefono_cliente,
+                    s.nombre AS servicio,
+                    t.nombre AS trabajadora,
+                    c.fecha,
+                    c.hora,
+                    c.estado
+                FROM citas c
+                JOIN Servicios s ON c.id_servicio = s.id
+                JOIN Trabajadoras t ON c.trabajadoras_idTrabajadora = t.idTrabajadora
+                WHERE c.telefono_cliente = ? AND c.estado = 'Pendiente'
+                ORDER BY c.fecha ASC, c.hora ASC
+            """
+            cursor.execute(query, (telefono,))
+            raw_citas = cursor.fetchall()
+            
+            for row in raw_citas:
+                row_list = list(row)
+                if row_list[6]:
+                    try:
+                        hora_str = str(row_list[6])[:5]
+                        hora_12 = datetime.datetime.strptime(hora_str, "%H:%M").strftime("%I:%M %p")
+                        row_list[6] = hora_12
+                    except:
+                        pass
+                citas.append(row_list)
+            conexion.close()
+            
+    return render_template('buscar_cita.html', citas=citas, telefono=telefono)
 
-    # La magia: filtramos y dejamos SOLO las horas que NO están ocupadas
-    horas_libres = [h for h in todas_las_horas if h not in horas_ocupadas]
+# Cancelación efectuada por la clienta (Redirige a /mis_citas)
+@app.route('/cancelar_cita_cliente/<int:id_cita>', methods=['POST'])
+def cancelar_cita_cliente(id_cita):
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("DELETE FROM citas WHERE idcitas = ?", (id_cita,))
+        conexion.commit()
+        conexion.close()
+        return redirect(url_for('mis_citas'))
+    except Exception as e:
+        return f"Error al cancelar la cita: {e}"
 
-    return jsonify(horas_libres)
 
+# ==========================================
+# 2. RUTAS DE ADMINISTRACIÓN
+# ==========================================
+
+# Panel principal del administrador
 @app.route('/admin')
 def admin():
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # El WHERE oculta las canceladas y terminadas de la vista de la Jefa
-        cursor.execute("""
-            SELECT c.idcitas, c.nombre_cliente, c.telefono_cliente, s.nombre, c.fecha, c.hora, c.estado 
-            FROM citas c
-            JOIN servicios s ON c.id_servicio = s.idservicio
-            WHERE c.estado NOT IN ('cancelada', 'cancelado', 'Terminada')
-            ORDER BY c.fecha, c.hora
-        """)
-        citas_agendadas = cursor.fetchall()
-        
-        cursor.close()
-        conexion.close()
-        
-        return render_template('admin.html', citas=citas_agendadas)
-
-    except Exception as error:
-        return f"Error al cargar el panel de administración: {error}", 500
-    
-@app.route('/bloquear', methods=['POST'])
-def bloquear():
-    try:
-        fecha_bloqueo = request.form['fecha']
-        hora_bloqueo = request.form['hora']
-
-        conexion = obtener_conexion()
-        cursor = conexion.cursor()
-
-        # Obtenemos cualquier ID de servicio válido para que SQL Server no dé error
-        cursor.execute("SELECT TOP 1 idservicio FROM servicios")
-        servicio_dummy = cursor.fetchone()[0]
-
-        # Insertamos la cita fantasma
-        cursor.execute("""
-            INSERT INTO citas (nombre_cliente, telefono_cliente, id_servicio, fecha, hora, estado)
-            VALUES ('BLOQUEADO / PERSONAL', 'N/A', ?, ?, ?, 'Bloqueado')
-        """, (servicio_dummy, fecha_bloqueo, hora_bloqueo))
-        
-        conexion.commit()
-        cursor.close()
-        conexion.close()
-
-        # Recargamos la página del admin para ver los cambios
-        return redirect('/admin')
-
-    except Exception as error:
-        return f"Error al bloquear el horario: {error}", 500
-    
-@app.route('/cancelar', methods=['POST'])
-def cancelar():
-    try:
-        # Recibimos el ID de la cita que tu prima quiere cancelar
-        id_cita = request.form['id_cita']
-        
-        conexion = obtener_conexion()
-        cursor = conexion.cursor()
-        
-        # Cambiamos el estado a 'cancelado' (así liberamos el espacio)
+        # Marca automáticamente como 'Finalizada' las citas que ya pasaron
         cursor.execute("""
             UPDATE citas 
-            SET estado = 'cancelado' 
-            WHERE idcitas = ?
-        """, (id_cita,))
-        
+            SET estado = 'Finalizada' 
+            WHERE fecha_hora < GETDATE() AND estado = 'Pendiente'
+        """)
         conexion.commit()
-        cursor.close()
-        conexion.close()
         
-        # Recargamos la página del admin
-        return redirect('/admin')
-
-    except Exception as error:
-        return f"Error al cancelar la cita: {error}", 500
-@app.route('/mis_citas', methods=['GET', 'POST'])
-def mis_citas():
-    try:
-        # Si la clienta envía el formulario con su teléfono
-        if request.method == 'POST':
-            telefono = request.form['telefono']
-            conexion = obtener_conexion()
-            cursor = conexion.cursor()
-            
-            # Buscamos SOLO las citas que no estén canceladas ni bloqueadas
-            cursor.execute("""
-                SELECT c.idcitas, s.nombre, c.fecha, c.hora 
-                FROM citas c
-                JOIN servicios s ON c.id_servicio = s.idservicio
-                WHERE c.telefono_cliente = ? AND c.estado NOT IN ('cancelada', 'cancelado', 'Bloqueado')
-            """, (telefono,))
-            citas_encontradas = cursor.fetchall()
-            
-            cursor.close()
-            conexion.close()
-            
-            return render_template('buscar_cita.html', citas=citas_encontradas)
-            
-        # Si entra por primera vez a la página, mostramos el buscador vacío
-        return render_template('buscar_cita.html', citas=None)
+        cursor.execute("SELECT * FROM Trabajadoras")
+        trabajadoras = cursor.fetchall()
         
-    except Exception as error:
-        return f"Error al buscar citas: {error}", 500
-
-@app.route('/cancelar_cliente', methods=['POST'])
-def cancelar_cliente():
-    try:
-        id_cita = request.form['id_cita']
-        
-        conexion = obtener_conexion()
-        cursor = conexion.cursor()
-        
-        # Le cambiamos el estado a 'cancelada'
-        cursor.execute("UPDATE citas SET estado = 'cancelada' WHERE idcitas = ?", (id_cita,))
-        
-        conexion.commit()
-        cursor.close()
-        conexion.close()
-        
-        # Mensaje de confirmación para la clienta
-        return """
-        <div style="text-align: center; font-family: 'Poppins', sans-serif; margin-top: 100px;">
-            <h1 style="color: #831843;">Cita cancelada con éxito ✅</h1>
-            <p style="color: #6c757d; font-size: 1.2rem; margin-bottom: 30px;">Tu espacio ha sido liberado. ¡Esperamos verte pronto!</p>
-            <a href="/" style="padding: 12px 25px; background-color: #fb7185; color: white; text-decoration: none; border-radius: 10px; font-weight: 500;">Volver al inicio</a>
-        </div>
+        query = """
+            SELECT 
+                c.idcitas,
+                c.nombre_cliente,
+                c.telefono_cliente,
+                s.nombre AS servicio,
+                t.nombre AS trabajadora,
+                c.fecha,
+                c.hora,
+                c.estado
+            FROM citas c
+            JOIN Servicios s ON c.id_servicio = s.id
+            JOIN Trabajadoras t ON c.trabajadoras_idTrabajadora = t.idTrabajadora
+            ORDER BY c.fecha DESC, c.hora DESC
         """
-    except Exception as error:
-        return f"Error al cancelar: {error}", 500
-    
-@app.route('/terminar', methods=['POST'])
-def terminar():
+        cursor.execute(query)
+        raw_citas = cursor.fetchall()
+        
+        citas = []
+        for row in raw_citas:
+            row_list = list(row)
+            if row_list[6]:
+                try:
+                    hora_str = str(row_list[6])[:5]
+                    hora_12 = datetime.datetime.strptime(hora_str, "%H:%M").strftime("%I:%M %p")
+                    row_list[6] = hora_12
+                except:
+                    pass
+            citas.append(row_list)
+            
+        conexion.close()
+        return render_template('admin.html', citas=citas, trabajadoras=trabajadoras)
+    except Exception as e:
+        return f"Error al cargar el panel de administración: {e}"
+
+# Bloqueo manual de horarios por especialista desde el panel admin
+@app.route('/bloquear_horario', methods=['POST'])
+def bloquear_horario():
     try:
-        id_cita = request.form['id_cita']
+        id_trabajadora = request.form['trabajadora_id']
+        fecha = request.form['fecha']
+        hora = request.form['hora']
+        
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Cambiamos el estado a Terminada
-        cursor.execute("UPDATE citas SET estado = 'Terminada' WHERE idcitas = ?", (id_cita,))
+        fecha_hora = f"{fecha} {hora}:00" if len(hora) == 5 else f"{fecha} {hora}"
+        
+        cursor.execute("""
+            INSERT INTO citas (nombre_cliente, telefono_cliente, id_servicio, trabajadoras_idTrabajadora, fecha, hora, fecha_hora, estado)
+            VALUES ('HORARIO BLOQUEADO', 'N/A', (SELECT TOP 1 id FROM Servicios), ?, ?, ?, ?, 'Bloqueado')
+        """, (id_trabajadora, fecha, hora, fecha_hora))
         
         conexion.commit()
-        cursor.close()
         conexion.close()
-        
-        return redirect('/admin')
-    except Exception as error:
-        return f"Error al terminar la cita: {error}", 500
-    
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"Error al bloquear horario: {e}"
+
+# Eliminación/Cancelación realizada desde el panel del Administrador
+@app.route('/cancelar_cita/<int:id_cita>', methods=['POST'])
+def cancelar_cita(id_cita):
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("DELETE FROM citas WHERE idcitas = ?", (id_cita,))
+        conexion.commit()
+        conexion.close()
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"Error al eliminar la cita: {e}"
+
+
+# ==========================================
+# 3. PUNTO DE ENTRADA DE LA APLICACIÓN
+# ==========================================
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

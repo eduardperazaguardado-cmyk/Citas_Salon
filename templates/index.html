@@ -4,237 +4,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DanasNails - Uñas y Spa</title>
-    <!-- Bootstrap -->
+    <title>DanasNails - Reserva tu Cita</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Poppins:wght@300;400;500&display=swap"
-        rel="stylesheet">
-    <!-- Flatpickr (Calendario Premium) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-
     <style>
-        body {
-            background-color: #fcf8fa;
-            font-family: 'Poppins', sans-serif;
+        :root {
+            --gold-main: #cca43b;
+            --gold-dark: #b08928;
+            --gold-soft: #f4ecdc;
+            --bg-page: #f9f7f3;
+            --text-dark: #2b2623;
         }
 
-        .salon-title {
-            font-family: 'Playfair Display', serif;
-            color: #831843;
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
         }
 
         .card-custom {
-            border: none;
+            background-color: #ffffff;
             border-radius: 24px;
-            box-shadow: 0 15px 40px rgba(225, 29, 72, 0.08);
-            overflow: hidden;
+            border: 1px solid rgba(204, 164, 59, 0.25);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            max-width: 550px;
+            margin: 0 auto;
         }
 
-        /* Entradas de texto lujosas */
+        /* Estilos del Logo */
+        .logo-img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid var(--gold-main);
+            box-shadow: 0 4px 15px rgba(204, 164, 59, 0.25);
+        }
+
+        .logo-placeholder {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background-color: var(--gold-soft);
+            border: 3px solid var(--gold-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(204, 164, 59, 0.2);
+        }
+
+        .title-gold {
+            color: var(--gold-main);
+            font-weight: 700;
+        }
+
+        /* Rótulos en dorado */
+        .label-custom {
+            color: var(--gold-main);
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Estilos de inputs y desplegables */
         .form-control,
         .form-select {
-            border-radius: 12px;
-            border: 1.5px solid #fce7f3;
-            padding: 14px 18px;
-            background-color: #fffafc;
-            color: #4c1d95;
-            transition: all 0.3s ease;
+            border: 1.5px solid var(--gold-main) !important;
+            border-radius: 16px !important;
+            padding: 12px 16px !important;
+            color: var(--text-dark) !important;
         }
 
-        .form-control:focus,
-        .form-select:focus {
-            border-color: #fb7185;
-            box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.15);
+        /* Cuadro de aviso para Horarios: Borde dorado redondeado y texto negro/oscuro */
+        .box-placeholder {
+            border: 1.5px solid var(--gold-main);
             background-color: #ffffff;
-        }
-
-        /* Botones de Horarios Premium (Pills) */
-        .btn-outline-premium {
-            color: #e11d48;
-            background-color: #fff0f2;
-            border: 1px solid #fda4af;
-            border-radius: 12px;
-            padding: 10px 20px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .btn-check:checked+.btn-outline-premium {
-            background-color: #e11d48;
-            color: white;
-            border-color: #e11d48;
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
-        }
-
-        .btn-outline-premium:hover {
-            background-color: #ffe4e6;
-        }
-
-        /* Botón Principal */
-        .btn-custom {
-            background-color: #fb7185;
-            border: none;
-            color: white;
-            border-radius: 14px;
-            padding: 15px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-custom:hover {
-            background-color: #e11d48;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(225, 29, 72, 0.25);
-        }
-
-        .header-image {
-            width: 100%;
-            height: 240px;
-            object-fit: cover;
-        }
-
-        .label-custom {
+            border-radius: 16px;
+            padding: 12px 16px;
+            text-align: left;
+            color: var(--text-dark);
             font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #9f1239;
-            margin-bottom: 8px;
+            font-weight: 400;
+            width: 100%;
+        }
+
+        /* Grid de Cuadritos / Botones de Horarios */
+        .grid-horas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-hora {
+            border: 1.5px solid var(--gold-main);
+            color: var(--text-dark);
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 12px 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn-hora:hover {
+            background-color: var(--gold-soft);
+            color: var(--gold-dark);
+            border-color: var(--gold-main);
+        }
+
+        .btn-hora.active {
+            background: linear-gradient(135deg, #cca43b 0%, #b08928 100%) !important;
+            color: #ffffff !important;
+            border-color: var(--gold-dark) !important;
+            box-shadow: 0 4px 12px rgba(204, 164, 59, 0.35);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #cca43b 0%, #b08928 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 18px !important;
+            font-weight: 600 !important;
+            padding: 14px 20px !important;
         }
     </style>
 </head>
 
-<body>
-    <div class="container mt-4 mb-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="card card-custom">
+<body class="py-5">
+    <div class="container">
 
-                    <img src="https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                        class="header-image" alt="DanasNails Spa">
+        <!-- Encabezado con Logo -->
+        <div class="text-center mb-4">
+            <img id="img-logo" src="{{ url_for('static', filename='img/logo.jpg') }}" alt="Logo DanasNails"
+                class="logo-img mb-3" onerror="corregirRutaLogo(this)">
+            <h2 class="title-gold mb-1">DanasNails</h2>
+            <p class="text-muted small">Reserva tu cita de forma rápida y sencilla</p>
+        </div>
 
-                    <div class="card-body p-4 p-md-5">
-                        <div class="text-center mb-5">
-                            <h1 class="salon-title fw-bold">DanasNails</h1>
-                            <p class="text-muted" style="font-size: 0.95rem;">Reserva tu momento de relajación y belleza
-                            </p>
+        <div class="card-custom p-4">
+            <form action="{{ url_for('agendar') }}" method="POST" id="form-reserva">
+
+                <!-- 1. Nombre -->
+                <div class="mb-4">
+                    <label for="nombre" class="form-label fw-bold label-custom">TU NOMBRE</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej. María López"
+                        required>
+                </div>
+
+                <!-- 2. Teléfono -->
+                <div class="mb-4">
+                    <label for="telefono" class="form-label fw-bold label-custom">TELÉFONO DE CONTACTO</label>
+                    <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="Ej. 7777-7777"
+                        required>
+                </div>
+
+                <!-- 3. Servicio -->
+                <div class="mb-4">
+                    <label for="servicio_id" class="form-label fw-bold label-custom">SERVICIO</label>
+                    <select class="form-select" id="servicio_id" name="servicio_id" required>
+                        <option value="" disabled selected>✨ Selecciona el servicio...</option>
+                        {% for servicio in servicios %}
+                        <option value="{{ servicio[0] }}">{{ servicio[1] }} - ${{ "%.2f"|format(servicio[3]) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 4. Encargada -->
+                <div class="mb-4">
+                    <label for="trabajadora_id" class="form-label fw-bold label-custom">¿CON QUIÉN DESEAS TU
+                        CITA?</label>
+                    <select class="form-select" id="trabajadora_id" name="trabajadora_id" required
+                        onchange="cargarHorasDisponibles()">
+                        <option value="" disabled selected>🌸 Selecciona a la encargada...</option>
+                        {% for chica in trabajadoras %}
+                        <option value="{{ chica[0] }}">{{ chica[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 5. Fecha -->
+                <div class="mb-4">
+                    <label for="fecha" class="form-label fw-bold label-custom">FECHA DE LA CITA</label>
+                    <input type="date" class="form-control" id="fecha" name="fecha" required
+                        onchange="cargarHorasDisponibles()">
+                </div>
+
+                <!-- 6. Horarios Disponibles -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold label-custom">HORARIOS DISPONIBLES</label>
+
+                    <input type="hidden" id="hora" name="hora" required>
+
+                    <div id="contenedor-horas">
+                        <div class="box-placeholder">
+                            🌸 Selecciona primero la encargada y la fecha.
                         </div>
-
-                        <form action="/agendar" method="POST">
-                            <div class="mb-4">
-                                <label for="nombre" class="form-label fw-bold label-custom">Tu Nombre</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre"
-                                    placeholder="Ej. Valeria López" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="telefono" class="form-label fw-bold label-custom">Teléfono</label>
-                                <input type="tel" class="form-control" id="telefono" name="telefono"
-                                    placeholder="Ej. 7777-7777" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="servicio" class="form-label fw-bold label-custom">Servicio</label>
-                                <select class="form-select cursor-pointer" id="servicio" name="servicio" required>
-                                    <option value="" disabled selected>✨ Selecciona cómo quieres consentirte...</option>
-                                    {% for servicio in servicios %}
-                                    <option value="{{ servicio[0] }}">{{ servicio[1] }} - ${{ "%.2f"|format(servicio[3])
-                                        }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="fecha" class="form-label fw-bold label-custom">Fecha de la cita</label>
-                                <!-- El selector de fecha ahora usará Flatpickr -->
-                                <input type="text" class="form-control bg-white" id="fecha" name="fecha"
-                                    placeholder="Selecciona un día en el calendario..." required readonly>
-                            </div>
-
-                            <div class="mb-5">
-                                <label class="form-label fw-bold label-custom">Horarios Disponibles</label>
-                                <!-- Aquí JavaScript insertará los botones elegantes de las horas -->
-                                <div id="contenedor-horas" class="p-3 border rounded-4 bg-white"
-                                    style="border-color: #fce7f3 !important;">
-                                    <p class="text-muted mb-0" style="font-size: 0.9rem;">👈 Primero elige una fecha
-                                        para ver los espacios libres.</p>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-custom w-100 fs-5">Reservar mi Cita ✨</button>
-
-                            <div class="text-center mt-4">
-                                <a href="/mis_citas" class="text-decoration-none fw-medium"
-                                    style="color: #fb7185; font-size: 0.9rem;">
-                                    ¿Necesitas cancelar o revisar tu cita? Haz clic aquí
-                                </a>
-                            </div>
-                        </form>
                     </div>
                 </div>
+
+                <button type="submit" class="btn btn-gold w-100 mt-2">Reservar mi Cita</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('mis_citas') }}" class="text-decoration-none text-muted small">
+                    ¿Necesitas cancelar o revisar tu cita? Haz clic aquí
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Scripts para hacer funcionar la magia visual -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
-
     <script>
-        // 1. Iniciamos el calendario premium (Flatpickr) en español
-        flatpickr("#fecha", {
-            locale: "es",
-            minDate: "today",
-            dateFormat: "Y-m-d",
-            disableMobile: true, // Fuerza el diseño premium en celulares
-            onChange: function (selectedDates, dateStr, instance) {
-                buscarHoras(dateStr);
+        function corregirRutaLogo(img) {
+            if (img.src.includes('/img/logo.jpg')) {
+                img.src = '/static/logo.jpg';
+            } else if (img.src.includes('logo.jpg')) {
+                img.src = '/static/img/logo.png';
+            } else if (img.src.includes('logo.png')) {
+                img.src = '/static/logo.png';
+            } else {
+                img.outerHTML = '<div class="logo-placeholder mb-3">💅</div>';
             }
-        });
+        }
 
-        // 2. Lógica para buscar horas y convertirlas en botones elegantes
-        const contenedorHoras = document.getElementById('contenedor-horas');
+        function cargarHorasDisponibles() {
+            const trabajadoraId = document.getElementById('trabajadora_id').value;
+            const fecha = document.getElementById('fecha').value;
+            const contenedor = document.getElementById('contenedor-horas');
+            const inputHora = document.getElementById('hora');
 
-        function buscarHoras(fechaSeleccionada) {
-            contenedorHoras.innerHTML = '<div class="spinner-border text-danger spinner-border-sm" role="status"></div> <span class="text-muted ms-2">Buscando espacios...</span>';
+            inputHora.value = '';
 
-            fetch(`/horas_disponibles?fecha=${fechaSeleccionada}`)
-                .then(respuesta => respuesta.json())
-                .then(horasLibres => {
-                    if (horasLibres.length === 0) {
-                        contenedorHoras.innerHTML = '<p class="text-danger fw-medium mb-0">Día completamente lleno 😔. Por favor elige otra fecha.</p>';
-                    } else {
-                        // Creamos una cuadrícula de botones para las horas
-                        let htmlBotones = '<div class="d-flex flex-wrap gap-2">';
+            if (!trabajadoraId || !fecha) {
+                contenedor.className = '';
+                contenedor.innerHTML = '<div class="box-placeholder">🌸 Selecciona primero la encargada y la fecha.</div>';
+                return;
+            }
 
-                        horasLibres.forEach(hora => {
-                            let horaNum = parseInt(hora.substring(0, 2));
-                            let ampm = horaNum >= 12 ? 'PM' : 'AM';
-                            let hora12 = horaNum > 12 ? horaNum - 12 : horaNum;
-                            if (hora12 === 0) hora12 = 12;
-                            let horaBonita = `${hora12.toString().padStart(2, '0')}:00 ${ampm}`;
+            contenedor.className = '';
+            contenedor.innerHTML = '<div class="box-placeholder">⌛ Cargando horarios disponibles...</div>';
 
-                            // Input tipo radio oculto + Etiqueta visual de botón
-                            htmlBotones += `
-                                <div>
-                                    <input type="radio" class="btn-check" name="hora" id="hora_${hora}" value="${hora}" required>
-                                    <label class="btn-outline-premium" for="hora_${hora}">${horaBonita}</label>
-                                </div>
-                            `;
+            fetch(`/horas_disponibles?trabajadora_id=${trabajadoraId}&fecha=${fecha}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exito && data.horas.length > 0) {
+                        contenedor.innerHTML = '';
+                        contenedor.className = 'grid-horas';
+
+                        data.horas.forEach(hora => {
+                            const [h, m] = hora.split(':');
+                            let horaInt = parseInt(h, 10);
+                            const ampm = horaInt >= 12 ? 'PM' : 'AM';
+                            horaInt = horaInt % 12 || 12;
+                            const hora12 = `${horaInt.toString().padStart(2, '0')}:${m} ${ampm}`;
+
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'btn-hora';
+                            btn.textContent = hora12;
+
+                            btn.onclick = function () {
+                                document.querySelectorAll('.btn-hora').forEach(b => b.classList.remove('active'));
+                                btn.classList.add('active');
+                                inputHora.value = hora;
+                            };
+
+                            contenedor.appendChild(btn);
                         });
-
-                        htmlBotones += '</div>';
-                        contenedorHoras.innerHTML = htmlBotones;
+                    } else {
+                        contenedor.className = '';
+                        contenedor.innerHTML = '<div class="box-placeholder text-danger border-danger">No hay horarios disponibles para esta fecha.</div>';
                     }
                 })
                 .catch(error => {
-                    contenedorHoras.innerHTML = '<p class="text-danger mb-0">Error al cargar las horas.</p>';
+                    console.error('Error:', error);
+                    contenedor.className = '';
+                    contenedor.innerHTML = '<div class="box-placeholder text-danger border-danger">Error al cargar las horas libres.</div>';
                 });
         }
+
+        document.getElementById('form-reserva').onsubmit = function (e) {
+            const hora = document.getElementById('hora').value;
+            if (!hora) {
+                alert('Por favor selecciona un horario haciendo clic en uno de los cuadritos dorados.');
+                e.preventDefault();
+            }
+        };
     </script>
 </body>
 
